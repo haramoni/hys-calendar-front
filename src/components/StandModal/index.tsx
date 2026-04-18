@@ -1,0 +1,469 @@
+import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { CalendarIcon, Trash2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+export type EventStage =
+  | "MONTAGEM"
+  | "EVENTO"
+  | "DESMONTAGEM"
+  | "EVENTO_COMPLETO";
+
+export type StandDay = {
+  id?: string;
+  date: string; // sempre YYYY-MM-DD no front
+  stage: EventStage;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type StandItemInput = {
+  standName: string;
+  supplierName: string;
+  location: string;
+  days: StandDay[];
+};
+
+export type EditableStand = StandItemInput & {
+  id: string;
+};
+
+type StandModalProps = {
+  onSave: (data: StandItemInput) => void | Promise<void>;
+  onUpdate?: (id: string, data: StandItemInput) => void | Promise<void>;
+  editingStand?: EditableStand | null;
+  trigger?: React.ReactNode;
+  openModalEdit?: boolean;
+  onOpenModalEditChange?: (open: boolean) => void;
+};
+
+const STAGE_OPTIONS: { label: string; value: EventStage }[] = [
+  { label: "Montagem", value: "MONTAGEM" },
+  { label: "Evento", value: "EVENTO" },
+  { label: "Desmontagem", value: "DESMONTAGEM" },
+  { label: "Evento completo", value: "EVENTO_COMPLETO" },
+];
+
+function toISODate(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function normalizeDateString(date: string) {
+  if (!date) return "";
+  return date.slice(0, 10);
+}
+
+function fromISODate(date: string) {
+  const normalized = normalizeDateString(date);
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return new Date("");
+  }
+
+  const [year, month, day] = normalized.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+export function StandModal({
+  onSave,
+  onUpdate,
+  editingStand,
+  trigger,
+  openModalEdit,
+  onOpenModalEditChange,
+}: StandModalProps) {
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [standName, setStandName] = useState("");
+  const [supplierName, setSupplierName] = useState("");
+  const [location, setLocation] = useState("");
+  const [days, setDays] = useState<StandDay[]>([]);
+
+  const [errors, setErrors] = useState<{
+    standName?: string;
+    supplierName?: string;
+    location?: string;
+    days?: string;
+  }>({});
+
+  const isEditing = !!editingStand;
+
+  const selectedDates = useMemo(() => {
+    return days
+      .map((item) => fromISODate(item.date))
+      .filter((date) => !Number.isNaN(date.getTime()));
+  }, [days]);
+
+  useEffect(() => {
+    if (openModalEdit) {
+      setOpen(true);
+    }
+  }, [openModalEdit]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (editingStand) {
+      setStandName(editingStand.standName ?? "");
+      setSupplierName(editingStand.supplierName ?? "");
+      setLocation(editingStand.location ?? "");
+
+      const normalizedDays = editingStand.days.reduce<StandDay[]>(
+        (acc, day) => {
+          const normalizedDate = normalizeDateString(day.date);
+
+          if (!normalizedDate) return acc;
+          if (acc.some((item) => item.date === normalizedDate)) return acc;
+
+          acc.push({
+            id: day.id,
+            createdAt: day.createdAt,
+            updatedAt: day.updatedAt,
+            date: normalizedDate,
+            stage: day.stage,
+          });
+
+          return acc;
+        },
+        [],
+      );
+
+      setDays(normalizedDays.sort((a, b) => a.date.localeCompare(b.date)));
+      setErrors({});
+      return;
+    }
+
+    resetForm();
+  }, [editingStand, open]);
+
+  function resetForm() {
+    setStandName("");
+    setSupplierName("");
+    setLocation("");
+    setDays([]);
+    setErrors({});
+  }
+
+  function toggleDay(date: Date | undefined) {
+    if (!date) return;
+
+    const isoDate = toISODate(date);
+
+    setDays((prev) => {
+      const exists = prev.some(
+        (item) => normalizeDateString(item.date) === isoDate,
+      );
+
+      if (exists) {
+        return prev
+          .filter((item) => normalizeDateString(item.date) !== isoDate)
+          .sort((a, b) => a.date.localeCompare(b.date));
+      }
+
+      return [...prev, { date: isoDate, stage: "EVENTO" }].sort((a, b) =>
+        a.date.localeCompare(b.date),
+      );
+    });
+
+    setErrors((prev) => ({ ...prev, days: undefined }));
+  }
+
+  function updateDayStage(date: string, stage: EventStage) {
+    const normalizedDate = normalizeDateString(date);
+
+    setDays((prev) =>
+      prev.map((item) =>
+        normalizeDateString(item.date) === normalizedDate
+          ? { ...item, stage }
+          : item,
+      ),
+    );
+  }
+
+  function removeDay(date: string) {
+    const normalizedDate = normalizeDateString(date);
+
+    setDays((prev) =>
+      prev.filter((item) => normalizeDateString(item.date) !== normalizedDate),
+    );
+  }
+
+  function validate() {
+    const nextErrors: {
+      standName?: string;
+      supplierName?: string;
+      location?: string;
+      days?: string;
+    } = {};
+
+    if (!standName.trim()) nextErrors.standName = "Informe o nome do stand.";
+    if (!supplierName.trim()) nextErrors.supplierName = "Informe o fornecedor.";
+    if (!location.trim()) nextErrors.location = "Informe o local.";
+    if (!days.length) nextErrors.days = "Selecione pelo menos um dia.";
+
+    setErrors(nextErrors);
+
+    return Object.keys(nextErrors).length === 0;
+  }
+
+  async function handleSave() {
+    if (!validate()) return;
+
+    try {
+      setSubmitting(true);
+
+      const uniqueDaysMap = new Map<string, StandDay>();
+
+      for (const day of days) {
+        const normalizedDate = normalizeDateString(day.date);
+
+        if (!normalizedDate) continue;
+
+        uniqueDaysMap.set(normalizedDate, {
+          date: normalizedDate,
+          stage: day.stage,
+        });
+      }
+
+      const payload: StandItemInput = {
+        standName: standName.trim(),
+        supplierName: supplierName.trim(),
+        location: location.trim(),
+        days: Array.from(uniqueDaysMap.values()).sort((a, b) =>
+          a.date.localeCompare(b.date),
+        ),
+      };
+
+      if (isEditing && editingStand && onUpdate) {
+        await onUpdate(editingStand.id, payload);
+      } else {
+        await onSave(payload);
+      }
+
+      resetForm();
+      handleOpenChange(false);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    onOpenModalEditChange?.(nextOpen);
+
+    if (!nextOpen) {
+      resetForm();
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
+
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>
+            {isEditing ? "Editar stand" : "Criar novo stand"}
+          </DialogTitle>
+
+          <DialogDescription>
+            Selecione os dias do cronograma e defina a etapa de cada um.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-2">
+              <Label htmlFor="standName">Nome do stand</Label>
+              <Input
+                id="standName"
+                placeholder="Ex: Stand HYS"
+                value={standName}
+                onChange={(e) => {
+                  setStandName(e.target.value);
+                  setErrors((prev) => ({ ...prev, standName: undefined }));
+                }}
+              />
+              {errors.standName ? (
+                <span className="text-sm text-red-500">{errors.standName}</span>
+              ) : null}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="supplierName">Fornecedor</Label>
+              <Input
+                id="supplierName"
+                placeholder="Ex: Fornecedor XPTO"
+                value={supplierName}
+                onChange={(e) => {
+                  setSupplierName(e.target.value);
+                  setErrors((prev) => ({ ...prev, supplierName: undefined }));
+                }}
+              />
+              {errors.supplierName ? (
+                <span className="text-sm text-red-500">
+                  {errors.supplierName}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="location">Local</Label>
+              <Input
+                id="location"
+                placeholder="Ex: Pavilhão A"
+                value={location}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  setErrors((prev) => ({ ...prev, location: undefined }));
+                }}
+              />
+              {errors.location ? (
+                <span className="text-sm text-red-500">{errors.location}</span>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
+            <div className="rounded-2xl border p-4">
+              <div className="mb-3 flex items-center gap-2 font-medium">
+                <CalendarIcon className="h-4 w-4" />
+                Selecionar dias
+              </div>
+
+              <Calendar
+                mode="multiple"
+                locale={ptBR}
+                selected={selectedDates}
+                onDayClick={toggleDay}
+                className="rounded-md border"
+              />
+
+              <p className="mt-3 text-sm text-muted-foreground">
+                Clique em um dia para adicionar ou remover da seleção.
+              </p>
+
+              {errors.days ? (
+                <span className="mt-2 block text-sm text-red-500">
+                  {errors.days}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="rounded-2xl border p-4">
+              <div className="mb-3 font-medium">Dias selecionados</div>
+
+              {!days.length ? (
+                <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
+                  Nenhum dia selecionado ainda.
+                </div>
+              ) : (
+                <div className="max-h-[400px] space-y-3 overflow-auto">
+                  {[...days]
+                    .sort((a, b) => a.date.localeCompare(b.date))
+                    .map((day) => {
+                      const parsedDate = fromISODate(day.date);
+                      const isValidDate = !Number.isNaN(parsedDate.getTime());
+
+                      return (
+                        <div
+                          key={day.id ?? day.date}
+                          className="grid gap-3 rounded-xl border p-3 md:grid-cols-[180px_minmax(0,1fr)_44px]"
+                        >
+                          <div className="flex items-center text-sm font-medium">
+                            {isValidDate
+                              ? format(parsedDate, "dd/MM/yyyy - EEEE", {
+                                  locale: ptBR,
+                                })
+                              : "Data inválida"}
+                          </div>
+
+                          <Select
+                            value={day.stage}
+                            onValueChange={(value) =>
+                              updateDayStage(day.date, value as EventStage)
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a etapa" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                              {STAGE_OPTIONS.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => removeDay(day.date)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="mt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleOpenChange(false)}
+            disabled={submitting}
+          >
+            Cancelar
+          </Button>
+
+          <Button type="button" onClick={handleSave} disabled={submitting}>
+            {submitting
+              ? "Salvando..."
+              : isEditing
+                ? "Salvar alterações"
+                : "Salvar stand"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
