@@ -52,7 +52,6 @@ export function CalendarPage() {
     try {
       setSaving(true);
       setError("");
-
       await api.post("/api/events", data);
       await loadEvents();
     } catch (err) {

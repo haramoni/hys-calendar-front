@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -175,15 +176,20 @@ export function StandModal({
 
     const isoDate = toISODate(date);
 
-    setDays((prev) => {
+    setDays((prev: any) => {
       const exists = prev.some(
-        (item) => normalizeDateString(item.date) === isoDate,
+        (item: { date: string }) => normalizeDateString(item.date) === isoDate,
       );
 
       if (exists) {
         return prev
-          .filter((item) => normalizeDateString(item.date) !== isoDate)
-          .sort((a, b) => a.date.localeCompare(b.date));
+          .filter(
+            (item: { date: string }) =>
+              normalizeDateString(item.date) !== isoDate,
+          )
+          .sort((a: { date: string }, b: { date: any }) =>
+            a.date.localeCompare(b.date),
+          );
       }
 
       return [...prev, { date: isoDate, stage: "EVENTO" }].sort((a, b) =>

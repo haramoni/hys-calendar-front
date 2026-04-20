@@ -20,7 +20,7 @@ export function LoginForm() {
     e.preventDefault();
 
     try {
-      const response = await api.post("http://localhost:3333/auth/login", {
+      const response = await api.post("/auth/login", {
         email,
         password,
       });
