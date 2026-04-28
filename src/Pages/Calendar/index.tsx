@@ -102,12 +102,6 @@ export function CalendarPage() {
     setVisibleMonthsCount((prev) => prev + LOAD_MORE_STEP);
   }
 
-  function handleLogout() {
-    localStorage.removeItem("hys_token");
-    localStorage.removeItem("hys_user");
-    window.location.href = "/login";
-  }
-
   const visibleMonths = useMemo(() => {
     return months.slice(0, visibleMonthsCount);
   }, [months, visibleMonthsCount]);
@@ -115,76 +109,83 @@ export function CalendarPage() {
   const hasMoreMonths = visibleMonthsCount < months.length;
 
   return (
-    <div className="space-y-8 p-6" ref={containerRef}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Calendário</h1>
-          <p className="text-sm text-muted-foreground">
-            Visualize e gerencie os stands por mês
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <StandModal
-            onSave={handleCreateStand}
-            onUpdate={handleUpdateStand}
-            editingStand={selectedStand}
-            openModalEdit={openModalEdit}
-            onOpenModalEditChange={(open) => {
-              setOpenModalEdit(open);
-              if (!open) {
-                setSelectedStand(null);
-              }
-            }}
-            trigger={
-              <Button
-                type="button"
-                disabled={saving}
-                onClick={() => setSelectedStand(null)}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                {saving ? "Salvando..." : "Novo stand"}
-              </Button>
-            }
-          />
-
-          <Button type="button" variant="outline" onClick={handleLogout}>
-            Sair
-          </Button>
-
-          <PrintButton containerRef={containerRef} />
-        </div>
-      </div>
-
-      {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-          {error}
-        </div>
-      ) : null}
-
-      {loading ? (
-        <div className="rounded-xl border bg-background p-6">
-          <p>Carregando calendário...</p>
-        </div>
-      ) : (
-        <div className="space-y-10">
-          {visibleMonths.map((month) => (
-            <MonthTable
-              key={month.monthId}
-              monthData={month}
-              openEdit={handleOpenEdit}
-            />
-          ))}
-
-          {hasMoreMonths ? (
-            <div className="flex justify-center">
-              <Button type="button" variant="outline" onClick={handleLoadMore}>
-                Carregar mais meses
-              </Button>
+    <div className="brand-page min-h-screen p-4 sm:p-6" ref={containerRef}>
+      <div className="mx-auto space-y-8">
+        <div className="brand-panel rounded-[24px] p-6 sm:p-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-[var(--color-primary)]">
+                Calendário
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Visualize e gerencie os stands por mês
+              </p>
             </div>
-          ) : null}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <StandModal
+                onSave={handleCreateStand}
+                onUpdate={handleUpdateStand}
+                editingStand={selectedStand}
+                openModalEdit={openModalEdit}
+                onOpenModalEditChange={(open) => {
+                  setOpenModalEdit(open);
+                  if (!open) {
+                    setSelectedStand(null);
+                  }
+                }}
+                trigger={
+                  <Button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => setSelectedStand(null)}
+                    className="no-print"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {saving ? "Salvando..." : "Novo stand"}
+                  </Button>
+                }
+              />
+
+              <PrintButton containerRef={containerRef} />
+            </div>
+          </div>
         </div>
-      )}
+
+        {error ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+            {error}
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="brand-panel rounded-[20px] p-6">
+            <p>Carregando calendário...</p>
+          </div>
+        ) : (
+          <div className="space-y-10">
+            {visibleMonths.map((month) => (
+              <MonthTable
+                key={month.monthId}
+                monthData={month}
+                openEdit={handleOpenEdit}
+              />
+            ))}
+
+            {hasMoreMonths ? (
+              <div className="flex justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleLoadMore}
+                >
+                  Carregar mais meses
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

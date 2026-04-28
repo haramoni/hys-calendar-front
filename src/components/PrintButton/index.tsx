@@ -15,6 +15,29 @@ export function PrintButton({ containerRef }: PrintButtonProps) {
 
     const original = containerRef.current;
     const clone = original.cloneNode(true) as HTMLDivElement;
+    const today = new Date();
+    const currentMonthIndex =
+      today.getFullYear() * 12 + today.getMonth();
+
+    clone
+      .querySelectorAll<HTMLElement>("section[data-month][data-year]")
+      .forEach((section) => {
+        const month = Number(section.dataset.month);
+        const year = Number(section.dataset.year);
+
+        if (!month || !year) {
+          return;
+        }
+
+        const sectionMonthIndex = year * 12 + (month - 1);
+        const isVisibleInPrint =
+          sectionMonthIndex >= currentMonthIndex - 1 &&
+          sectionMonthIndex <= currentMonthIndex + 1;
+
+        if (!isVisibleInPrint) {
+          section.remove();
+        }
+      });
 
     clone.classList.add("print-mode");
     clone.style.position = "fixed";

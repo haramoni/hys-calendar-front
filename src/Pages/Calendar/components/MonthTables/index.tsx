@@ -105,14 +105,12 @@ export function MonthTable({ monthData, openEdit }: MonthTableProps) {
   });
 
   function handleOpenDeleteModal(event: CalendarEvent) {
-    console.log(event);
     setEventToDelete(event);
     setOpenDeleteModal(true);
   }
 
   async function handleDelete() {
     if (!eventToDelete) return;
-    console.log(eventToDelete);
 
     try {
       setIsDeleting(true);
@@ -133,9 +131,15 @@ export function MonthTable({ monthData, openEdit }: MonthTableProps) {
 
   return (
     <>
-      <section className="space-y-4">
+      <section
+        className="brand-panel space-y-4 rounded-[20px] p-5 sm:p-6"
+        data-month={monthData.month}
+        data-year={monthData.year}
+      >
         <div>
-          <h2 className="text-2xl font-bold capitalize">{monthTitle}</h2>
+          <h2 className="text-2xl font-bold capitalize text-[var(--color-primary)]">
+            {monthTitle}
+          </h2>
           <p className="text-sm text-muted-foreground">
             {monthData.events.length}{" "}
             {monthData.events.length === 1
@@ -144,11 +148,11 @@ export function MonthTable({ monthData, openEdit }: MonthTableProps) {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border bg-background shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-[rgb(228,228,228)] bg-white shadow-[0_6px_18px_rgba(0,0,0,0.03)]">
           <table className="min-w-max border-collapse">
             <thead>
-              <tr className="bg-muted">
-                <th className="sticky left-0 z-20 min-w-[260px] border bg-background p-3 text-left">
+              <tr className="bg-[rgb(246,246,246)]">
+                <th className="sticky left-0 z-20 min-w-[260px] border bg-[rgb(250,250,250)] p-3 text-left text-black">
                   Stand
                 </th>
 
@@ -160,7 +164,9 @@ export function MonthTable({ monthData, openEdit }: MonthTableProps) {
                     <div className="text-xs text-muted-foreground">
                       {format(day, "EEE", { locale: ptBR })}
                     </div>
-                    <div className="font-semibold">{format(day, "dd")}</div>
+                    <div className="font-semibold text-black">
+                      {format(day, "dd")}
+                    </div>
                   </th>
                 ))}
               </tr>
@@ -179,13 +185,13 @@ export function MonthTable({ monthData, openEdit }: MonthTableProps) {
               ) : (
                 monthData.events.map((event) => (
                   <tr key={event.id}>
-                    <td className="sticky left-0 z-10 border bg-background p-3 align-top">
+                    <td className="sticky left-0 z-10 border bg-white p-3 align-top">
                       <div className="relative space-y-1 pr-8">
                         <div className="absolute right-0 top-0 no-print flex flex-col gap-2">
                           <button
                             type="button"
                             onClick={() => openEdit(event)}
-                            className="cursor-pointer"
+                            className="cursor-pointer text-[var(--color-secondary)] transition hover:text-[var(--color-primary)]"
                           >
                             <Pencil size={15} />
                           </button>
@@ -193,13 +199,15 @@ export function MonthTable({ monthData, openEdit }: MonthTableProps) {
                           <button
                             type="button"
                             onClick={() => handleOpenDeleteModal(event)}
-                            className="cursor-pointer"
+                            className="cursor-pointer text-[var(--color-secondary)] transition hover:text-[var(--color-highlight)]"
                           >
                             <Trash size={15} />
                           </button>
                         </div>
 
-                        <div className="font-semibold">{event.standName}</div>
+                        <div className="font-semibold text-[var(--color-primary)]">
+                          {event.standName}
+                        </div>
 
                         <div className="text-sm text-muted-foreground">
                           <span className="font-medium">Fornecedor:</span>{" "}

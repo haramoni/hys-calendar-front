@@ -34,12 +34,10 @@ export function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-primary/10 px-4 py-10">
-      <div className="absolute inset-0 -z-10" />
-
-      <Card className="w-full max-w-md rounded-3xl border border-black/5 bg-white/95 shadow-[0_20px_60px_rgba(0,0,0,0.08)] backdrop-blur">
+    <div className="brand-page flex min-h-screen items-center justify-center px-4 py-10">
+      <Card className="w-full max-w-md rounded-3xl border-[rgb(228,228,228)] bg-white">
         <CardHeader className="space-y-6 pb-2 text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-primary">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[rgb(248,248,248)]">
             <img
               src="/icon-hys.jpg"
               alt="HYS"
@@ -48,7 +46,7 @@ export function LoginForm() {
           </div>
 
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-[var(--color-background)]">
+            <h1 className="text-3xl font-semibold tracking-tight text-[var(--color-primary)]">
               Login HYS
             </h1>
           </div>
@@ -70,7 +68,7 @@ export function LoginForm() {
                 name="email"
                 type="email"
                 placeholder="you@company.com"
-                className="h-12 rounded-xl border-[var(--color-secondary)]/20 bg-white text-[var(--color-background)] placeholder:text-[var(--color-secondary)]/70 focus-visible:ring-[var(--color-primary)]"
+                className="h-12 rounded-xl border-[rgb(228,228,228)] bg-white text-[var(--color-background)] placeholder:text-[var(--color-secondary)]/70 focus-visible:ring-[var(--color-primary)]"
               />
             </div>
 
@@ -92,13 +90,13 @@ export function LoginForm() {
                   onChange={(e) => setPassword(e.target.value)}
                   type={showPassword ? "text" : "password"}
                   placeholder="Digite sua senha"
-                  className="h-12 rounded-xl border-[var(--color-secondary)]/20 bg-white pr-11 text-[var(--color-background)] placeholder:text-[var(--color-secondary)]/70 focus-visible:ring-[var(--color-primary)]"
+                  className="h-12 rounded-xl border-[rgb(228,228,228)] bg-white pr-11 text-[var(--color-background)] placeholder:text-[var(--color-secondary)]/70 focus-visible:ring-[var(--color-primary)]"
                 />
 
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-secondary)] transition hover:text-[var(--color-background)]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-secondary)] transition hover:text-[var(--color-primary)]"
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />

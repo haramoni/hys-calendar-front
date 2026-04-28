@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Trash2 } from "lucide-react";
@@ -17,13 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export type EventStage =
   | "MONTAGEM"
@@ -33,7 +25,7 @@ export type EventStage =
 
 export type StandDay = {
   id?: string;
-  date: string; // sempre YYYY-MM-DD no front
+  date: string;
   stage: EventStage;
   createdAt?: string;
   updatedAt?: string;
@@ -54,7 +46,7 @@ type StandModalProps = {
   onSave: (data: StandItemInput) => void | Promise<void>;
   onUpdate?: (id: string, data: StandItemInput) => void | Promise<void>;
   editingStand?: EditableStand | null;
-  trigger?: React.ReactNode;
+  trigger?: ReactNode;
   openModalEdit?: boolean;
   onOpenModalEditChange?: (open: boolean) => void;
 };
@@ -115,10 +107,23 @@ export function StandModal({
 
   const isEditing = !!editingStand;
 
-  const selectedDates = useMemo(() => {
-    return days
-      .map((item) => fromISODate(item.date))
-      .filter((date) => !Number.isNaN(date.getTime()));
+  const stageDates = useMemo<Record<EventStage, string[]>>(() => {
+    const grouped = {
+      MONTAGEM: [],
+      EVENTO: [],
+      DESMONTAGEM: [],
+      EVENTO_COMPLETO: [],
+    } satisfies Record<EventStage, string[]>;
+
+    for (const day of days) {
+      const normalizedDate = normalizeDateString(day.date);
+
+      if (!normalizedDate) continue;
+
+      grouped[day.stage].push(normalizedDate as never);
+    }
+
+    return grouped;
   }, [days]);
 
   useEffect(() => {
@@ -171,45 +176,54 @@ export function StandModal({
     setErrors({});
   }
 
-  function toggleDay(date: Date | undefined) {
-    if (!date) return;
+  function setStageCalendar(stage: EventStage, dates: Date[] | undefined) {
+    const nextStageDates = (dates ?? []).map(toISODate);
+    const nextSelectedDates = new Set(nextStageDates);
 
-    const isoDate = toISODate(date);
-
-    setDays((prev: any) => {
-      const exists = prev.some(
-        (item: { date: string }) => normalizeDateString(item.date) === isoDate,
+    setDays((prev) => {
+      const metaByDate = new Map(
+        prev.map((item) => [
+          normalizeDateString(item.date),
+          {
+            id: item.id,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+          },
+        ]),
       );
 
-      if (exists) {
-        return prev
-          .filter(
-            (item: { date: string }) =>
-              normalizeDateString(item.date) !== isoDate,
-          )
-          .sort((a: { date: string }, b: { date: any }) =>
-            a.date.localeCompare(b.date),
-          );
-      }
+      const remainingDays = prev.filter((item) => {
+        const normalizedDate = normalizeDateString(item.date);
 
-      return [...prev, { date: isoDate, stage: "EVENTO" }].sort((a, b) =>
+        if (item.stage === stage) {
+          return false;
+        }
+
+        if (nextSelectedDates.has(normalizedDate)) {
+          return false;
+        }
+
+        return true;
+      });
+
+      const updatedStageDays = nextStageDates.map((date) => {
+        const previousMeta = metaByDate.get(date);
+
+        return {
+          id: previousMeta?.id,
+          createdAt: previousMeta?.createdAt,
+          updatedAt: previousMeta?.updatedAt,
+          date,
+          stage,
+        };
+      });
+
+      return [...remainingDays, ...updatedStageDays].sort((a, b) =>
         a.date.localeCompare(b.date),
       );
     });
 
     setErrors((prev) => ({ ...prev, days: undefined }));
-  }
-
-  function updateDayStage(date: string, stage: EventStage) {
-    const normalizedDate = normalizeDateString(date);
-
-    setDays((prev) =>
-      prev.map((item) =>
-        normalizeDateString(item.date) === normalizedDate
-          ? { ...item, stage }
-          : item,
-      ),
-    );
   }
 
   function removeDay(date: string) {
@@ -294,14 +308,15 @@ export function StandModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-6xl">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar stand" : "Criar novo stand"}
           </DialogTitle>
 
           <DialogDescription>
-            Selecione os dias do cronograma e defina a etapa de cada um.
+            Selecione os dias diretamente no calendario de cada etapa. Cada dia
+            pode pertencer a apenas uma etapa por vez.
           </DialogDescription>
         </DialogHeader>
 
@@ -358,96 +373,82 @@ export function StandModal({
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
-            <div className="rounded-2xl border p-4">
-              <div className="mb-3 flex items-center gap-2 font-medium">
-                <CalendarIcon className="h-4 w-4" />
-                Selecionar dias
+          <div className="grid grid-cols-2 gap-6 justify-items-center">
+            {STAGE_OPTIONS.map((stageOption) => (
+              <div
+                key={stageOption.value}
+                className="rounded-2xl border p-4 w-fit"
+              >
+                <div className="mb-3 flex items-center gap-2 font-medium">
+                  <CalendarIcon className="h-4 w-4" />
+                  {stageOption.label}
+                </div>
+
+                <Calendar
+                  mode="multiple"
+                  locale={ptBR}
+                  selected={stageDates[stageOption.value].map(fromISODate)}
+                  onSelect={(selected) =>
+                    setStageCalendar(stageOption.value, selected)
+                  }
+                  className="rounded-md border"
+                />
               </div>
+            ))}
+          </div>
 
-              <Calendar
-                mode="multiple"
-                locale={ptBR}
-                selected={selectedDates}
-                onDayClick={toggleDay}
-                className="rounded-md border"
-              />
+          {errors.days ? (
+            <span className="text-sm text-red-500">{errors.days}</span>
+          ) : null}
 
-              <p className="mt-3 text-sm text-muted-foreground">
-                Clique em um dia para adicionar ou remover da seleção.
-              </p>
+          <div className="rounded-2xl border p-4">
+            <div className="mb-3 font-medium">Resumo dos dias selecionados</div>
 
-              {errors.days ? (
-                <span className="mt-2 block text-sm text-red-500">
-                  {errors.days}
-                </span>
-              ) : null}
-            </div>
+            {!days.length ? (
+              <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
+                Nenhum dia selecionado ainda.
+              </div>
+            ) : (
+              <div className="max-h-[400px] space-y-3 overflow-auto">
+                {[...days]
+                  .sort((a, b) => a.date.localeCompare(b.date))
+                  .map((day) => {
+                    const parsedDate = fromISODate(day.date);
+                    const isValidDate = !Number.isNaN(parsedDate.getTime());
+                    const stageLabel =
+                      STAGE_OPTIONS.find((option) => option.value === day.stage)
+                        ?.label ?? day.stage;
 
-            <div className="rounded-2xl border p-4">
-              <div className="mb-3 font-medium">Dias selecionados</div>
-
-              {!days.length ? (
-                <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
-                  Nenhum dia selecionado ainda.
-                </div>
-              ) : (
-                <div className="max-h-[400px] space-y-3 overflow-auto">
-                  {[...days]
-                    .sort((a, b) => a.date.localeCompare(b.date))
-                    .map((day) => {
-                      const parsedDate = fromISODate(day.date);
-                      const isValidDate = !Number.isNaN(parsedDate.getTime());
-
-                      return (
-                        <div
-                          key={day.id ?? day.date}
-                          className="grid gap-3 rounded-xl border p-3 md:grid-cols-[180px_minmax(0,1fr)_44px]"
-                        >
-                          <div className="flex items-center text-sm font-medium">
-                            {isValidDate
-                              ? format(parsedDate, "dd/MM/yyyy - EEEE", {
-                                  locale: ptBR,
-                                })
-                              : "Data inválida"}
-                          </div>
-
-                          <Select
-                            value={day.stage}
-                            onValueChange={(value) =>
-                              updateDayStage(day.date, value as EventStage)
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione a etapa" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              {STAGE_OPTIONS.map((option) => (
-                                <SelectItem
-                                  key={option.value}
-                                  value={option.value}
-                                >
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => removeDay(day.date)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                    return (
+                      <div
+                        key={day.id ?? day.date}
+                        className="grid gap-3 rounded-xl border p-3 md:grid-cols-[minmax(0,1fr)_180px_44px]"
+                      >
+                        <div className="flex items-center text-sm font-medium">
+                          {isValidDate
+                            ? format(parsedDate, "dd/MM/yyyy - EEEE", {
+                                locale: ptBR,
+                              })
+                            : "Data inválida"}
                         </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
+
+                        <div className="flex items-center rounded-md border px-3 text-sm text-muted-foreground">
+                          {stageLabel}
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => removeDay(day.date)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
           </div>
         </div>
 

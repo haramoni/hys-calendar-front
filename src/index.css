@@ -7,8 +7,8 @@
 :root {
   --color-primary: rgb(210, 7, 56);
   --color-secondary: rgb(127, 127, 127);
-  --color-background: rgb(26, 1, 3);
-  --color-background-light: rgb(228, 228, 228);
+  --color-background: rgb(42, 42, 42);
+  --color-background-light: rgb(244, 244, 245);
   --color-highlight: rgb(133, 1, 38);
   --color-yellowbg: rgb(255, 255, 224);
   --color-yellowtext: rgb(167, 167, 70);
@@ -22,39 +22,39 @@
   --sans: system-ui, "Segoe UI", Roboto, sans-serif;
   --heading: system-ui, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
-  --radius: 0.625rem;
+  --radius: 0.875rem;
 
   --background: rgb(255, 255, 255);
-  --foreground: rgb(37, 37, 37);
+  --foreground: rgb(45, 45, 45);
   --card: rgb(255, 255, 255);
-  --card-foreground: rgb(37, 37, 37);
+  --card-foreground: rgb(45, 45, 45);
   --popover: rgb(255, 255, 255);
-  --popover-foreground: rgb(37, 37, 37);
-  --primary: rgb(52, 52, 52);
-  --primary-foreground: rgb(251, 251, 251);
-  --secondary: rgb(247, 247, 247);
-  --secondary-foreground: rgb(52, 52, 52);
-  --muted: rgb(247, 247, 247);
-  --muted-foreground: rgb(142, 142, 142);
-  --accent: rgb(247, 247, 247);
-  --accent-foreground: rgb(52, 52, 52);
+  --popover-foreground: rgb(45, 45, 45);
+  --primary: rgb(210, 7, 56);
+  --primary-foreground: rgb(255, 255, 255);
+  --secondary: rgb(245, 245, 245);
+  --secondary-foreground: rgb(60, 60, 60);
+  --muted: rgb(245, 245, 245);
+  --muted-foreground: rgb(120, 120, 120);
+  --accent: rgb(245, 245, 245);
+  --accent-foreground: rgb(133, 1, 38);
   --destructive: rgb(210, 74, 35);
-  --border: rgb(235, 235, 235);
-  --input: rgb(235, 235, 235);
-  --ring: rgb(181, 181, 181);
-  --chart-1: rgb(222, 222, 222);
-  --chart-2: rgb(142, 142, 142);
-  --chart-3: rgb(112, 112, 112);
-  --chart-4: rgb(95, 95, 95);
-  --chart-5: rgb(69, 69, 69);
+  --border: rgb(228, 228, 228);
+  --input: rgb(228, 228, 228);
+  --ring: rgba(210, 7, 56, 0.28);
+  --chart-1: rgb(210, 7, 56);
+  --chart-2: rgb(133, 1, 38);
+  --chart-3: rgb(127, 127, 127);
+  --chart-4: rgb(190, 190, 190);
+  --chart-5: rgb(90, 90, 90);
   --sidebar: rgb(251, 251, 251);
-  --sidebar-foreground: rgb(37, 37, 37);
-  --sidebar-primary: rgb(52, 52, 52);
-  --sidebar-primary-foreground: rgb(251, 251, 251);
-  --sidebar-accent: rgb(247, 247, 247);
-  --sidebar-accent-foreground: rgb(52, 52, 52);
-  --sidebar-border: rgb(235, 235, 235);
-  --sidebar-ring: rgb(181, 181, 181);
+  --sidebar-foreground: rgb(45, 45, 45);
+  --sidebar-primary: rgb(210, 7, 56);
+  --sidebar-primary-foreground: rgb(255, 255, 255);
+  --sidebar-accent: rgb(245, 245, 245);
+  --sidebar-accent-foreground: rgb(133, 1, 38);
+  --sidebar-border: rgb(228, 228, 228);
+  --sidebar-ring: rgba(210, 7, 56, 0.28);
 }
 
 @theme inline {
@@ -136,12 +136,13 @@
 @layer base {
   * {
     border-color: var(--border);
-    outline-color: rgba(181, 181, 181, 0.5);
+    outline-color: rgba(210, 7, 56, 0.18);
   }
 
   body {
     background-color: var(--background);
     color: var(--foreground);
+    font-family: var(--sans);
   }
 }
 
@@ -214,4 +215,14 @@
 
 .print-mode .no-print {
   display: none !important;
+}
+
+.brand-page {
+  background: rgb(255, 255, 255);
+}
+
+.brand-panel {
+  background: rgb(255, 255, 255);
+  border: 1px solid rgb(228, 228, 228);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
 }
