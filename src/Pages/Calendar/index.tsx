@@ -122,7 +122,9 @@ export function CalendarPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-end gap-2">
+              <PrintButton containerRef={containerRef} />
+
               <StandModal
                 onSave={handleCreateStand}
                 onUpdate={handleUpdateStand}
@@ -146,8 +148,6 @@ export function CalendarPage() {
                   </Button>
                 }
               />
-
-              <PrintButton containerRef={containerRef} />
             </div>
           </div>
         </div>

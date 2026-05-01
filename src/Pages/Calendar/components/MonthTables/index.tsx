@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { eachDayOfInterval, endOfMonth, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Pencil, Trash } from "lucide-react";
@@ -85,6 +85,21 @@ function findStageForDate(days: EventDay[], currentDate: Date) {
   return days.find((day) => toUTCISODate(day.date) === currentDateKey);
 }
 
+function findFirstMatchedDayIndex(
+  eventDays: EventDay[],
+  dayIndexByDate: Map<string, number>,
+) {
+  return eventDays.reduce<number | null>((firstIndex, eventDay) => {
+    const dayIndex = dayIndexByDate.get(toUTCISODate(eventDay.date));
+
+    if (dayIndex === undefined) {
+      return firstIndex;
+    }
+
+    return firstIndex === null ? dayIndex : Math.min(firstIndex, dayIndex);
+  }, null);
+}
+
 export function MonthTable({ monthData, openEdit }: MonthTableProps) {
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(
@@ -103,6 +118,38 @@ export function MonthTable({ monthData, openEdit }: MonthTableProps) {
   const monthTitle = format(monthStart, "MMMM yyyy", {
     locale: ptBR,
   });
+
+  const sortedEvents = useMemo(() => {
+    const dayIndexByDate = new Map(
+      days.map((day, index) => [toLocalISODate(day), index]),
+    );
+
+    return monthData.events
+      .map((event, index) => ({
+        event,
+        index,
+        firstMatchedDayIndex: findFirstMatchedDayIndex(
+          event.days,
+          dayIndexByDate,
+        ),
+      }))
+      .sort((a, b) => {
+        if (a.firstMatchedDayIndex === null && b.firstMatchedDayIndex === null) {
+          return a.index - b.index;
+        }
+
+        if (a.firstMatchedDayIndex === null) {
+          return 1;
+        }
+
+        if (b.firstMatchedDayIndex === null) {
+          return -1;
+        }
+
+        return a.firstMatchedDayIndex - b.firstMatchedDayIndex;
+      })
+      .map(({ event }) => event);
+  }, [days, monthData.events]);
 
   function handleOpenDeleteModal(event: CalendarEvent) {
     setEventToDelete(event);
@@ -183,7 +230,7 @@ export function MonthTable({ monthData, openEdit }: MonthTableProps) {
                   </td>
                 </tr>
               ) : (
-                monthData.events.map((event) => (
+                sortedEvents.map((event) => (
                   <tr key={event.id}>
                     <td className="sticky left-0 z-10 border bg-white p-3 align-top">
                       <div className="relative space-y-1 pr-8">

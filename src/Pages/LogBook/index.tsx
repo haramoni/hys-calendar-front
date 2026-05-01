@@ -49,25 +49,25 @@ export function LogBookPage() {
   const [entryToDelete, setEntryToDelete] = useState<LogbookEntry | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const [logbooksData, peopleData] = await Promise.all([
+        getLogbooks(),
+        getPeople(),
+      ]);
+      setEntries(logbooksData);
+      setPeople(peopleData);
+    } catch {
+      return;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const [logbooksData, peopleData] = await Promise.all([
-          getLogbooks(),
-          getPeople(),
-        ]);
-        setEntries(logbooksData);
-        setPeople(peopleData);
-      } catch {
-        return;
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
